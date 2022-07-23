@@ -7,13 +7,13 @@
 (require "environment.rkt")
 (require (lib "eopl.ss" "eopl"))
 
-(provide run)
+(provide run ENV)
 
 
 (define break-signal #f)
-(define return-signal #f)
+(define return-signal '(#f))
 (define continue-signal #f)
-(define SKIP-MODE (lambda () (or break-signal return-signal continue-signal)))
+(define SKIP-MODE (lambda () (or break-signal (car return-signal) continue-signal)))
 (define return-value null)
 (define global-refs '())
 
@@ -29,20 +29,30 @@
       (set! ENV (empty-env)))))
 
 
-(define prev-env (lambda () (car ENV-history)))
+(define global-env (lambda () (list-ref ENV-history)))
 (define env-depth (lambda () (length ENV-history)))
 
 
-(define (push-env env)
-  (begin
-    (set! ENV-history (cons ENV ENV-history))
-    (set! ENV env)))
+(define apply-prev-env
+  (lambda (id depth)
+    (if (= depth (length ENV-history))
+        null
+        (let ([ref (apply-env id (list-ref ENV-history depth))])
+          (if (null? ref) (apply-prev-env id (add1 depth)) ref)))))
+              
+
+(define push-env
+  (lambda (env)
+    (begin
+      (set! ENV-history (cons ENV ENV-history))
+      (set! ENV env))))
 
 
-(define (pop-env)
-  (begin
-    (set! ENV (car ENV-history))
-    (set! ENV-history (cdr ENV-history))))
+(define pop-env
+  (lambda ()
+    (begin
+      (set! ENV (car ENV-history))
+      (set! ENV-history (cdr ENV-history)))))
 
 
 (define run
@@ -105,7 +115,7 @@
 (define value-of-global-statement
   (lambda (input)
     (cases global-statement input
-      (a-global-statement (id) (let ([old-ref (apply-env id (prev-env))])
+      (a-global-statement (id) (let ([old-ref (apply-prev-env id 0)])
                                  (let ([new-ref (newref (deref old-ref))])
                                    (begin
                                      (set! global-refs (cons (list (env-depth) id old-ref) global-refs))
@@ -115,7 +125,7 @@
 (define value-of-return-statement
   (lambda (input)
     (begin
-      (set! return-signal #t)
+      (set! return-signal (cons #t (cdr return-signal)))
       (cases return-statement input
         (return-statement-void () (set! return-value null))
         (return-statement-with-value (exp)(set! return-value (value-of-expression exp)))))))
@@ -332,7 +342,7 @@
 (define value-of-call-function
   (lambda (func args)
     (begin
-      (set! return-signal #f)
+      (set! return-signal (cons #f return-signal))
       (set! return-value null)
       (cases function-definition-statement func
         (function-definition-statement-without-parameter (id stmts) (begin
@@ -355,7 +365,7 @@
                         (set! stop #t)))
                   (loop stop)))))
       (pop-env)
-      (set! return-signal #f)
+      (set! return-signal (cdr return-signal))
       (let ([val return-value])
         (set! return-value null) val))))
         
