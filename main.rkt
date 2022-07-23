@@ -6,4 +6,4 @@
 (define (evaluate path) (run (file->string path)))
 
 
-(evaluate "./tests/binary-search.rktpy")
+(evaluate "./tests/binary-search.txt")

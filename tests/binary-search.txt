@@ -22,6 +22,6 @@ def binarySearch(lst=[] , searchValue = 0  , begin = 0 , end = 0):
     return -1;
 ;
 
-a = binarySearch([1 , 2 , 23 , 89 , 90] , 89 , 0 , 4);
+a = binarySearch([1 , 2 , 23 , 85, 86, 87, 88, 89 , 90] , 89 , 0 , 8);
 print(a);
     
