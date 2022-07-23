@@ -1,0 +1,12 @@
+def f(x=3): 
+	a = 3;
+	print(x);
+	if a == 3:
+		print(7);
+	else:
+		pass;
+	;
+	return 4;
+;
+res = f(2);
+print(res);
